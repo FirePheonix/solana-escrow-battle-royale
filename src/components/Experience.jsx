@@ -17,29 +17,32 @@ import { SafeZone } from "./SafeZone";
 export const Experience = ({ downgradedPerformance = false }) => {
   const [players, setPlayers] = useState([]);
   const [gameStarted, setGameStarted] = useState(false);
-  
+
   const start = async () => {
-    // Start the game
     await insertCoin();
-    
-    // Game has started after insertCoin resolves
     setGameStarted(true);
 
-    // Create a joystick controller for each joining player
+    let joinCount = 0;
+
     onPlayerJoin((state) => {
-      // Joystick will only create UI for current player (myPlayer)
-      // For others, it will only sync their state
+      const playerIndex = joinCount++;
+
       const joystick = new Joystick(state, {
         type: "angular",
-        buttons: [{ id: "fire", label: "Fire" }],
+        buttons: [
+          { id: "fire", label: "Fire" },
+          { id: "jump", label: "Jump" },
+        ],
       });
-      const newPlayer = { state, joystick };
+
+      const newPlayer = { state, joystick, playerIndex };
       state.setState("health", 100);
       state.setState("deaths", 0);
       state.setState("kills", 0);
-      setPlayers((players) => [...players, newPlayer]);
+
+      setPlayers((prev) => [...prev, newPlayer]);
       state.onQuit(() => {
-        setPlayers((players) => players.filter((p) => p.state.id !== state.id));
+        setPlayers((prev) => prev.filter((p) => p.state.id !== state.id));
       });
     });
   };
@@ -51,32 +54,21 @@ export const Experience = ({ downgradedPerformance = false }) => {
   const [bullets, setBullets] = useState([]);
   const [hits, setHits] = useState([]);
 
-  const [networkBullets, setNetworkBullets] = useMultiplayerState(
-    "bullets",
-    []
-  );
+  const [networkBullets, setNetworkBullets] = useMultiplayerState("bullets", []);
   const [networkHits, setNetworkHits] = useMultiplayerState("hits", []);
 
-  const onFire = (bullet) => {
-    setBullets((bullets) => [...bullets, bullet]);
-  };
+  const onFire = (bullet) => setBullets((prev) => [...prev, bullet]);
 
   const onHit = (bulletId, position) => {
-    setBullets((bullets) => bullets.filter((bullet) => bullet.id !== bulletId));
-    setHits((hits) => [...hits, { id: bulletId, position }]);
+    setBullets((prev) => prev.filter((b) => b.id !== bulletId));
+    setHits((prev) => [...prev, { id: bulletId, position }]);
   };
 
-  const onHitEnded = (hitId) => {
-    setHits((hits) => hits.filter((h) => h.id !== hitId));
-  };
+  const onHitEnded = (hitId) =>
+    setHits((prev) => prev.filter((h) => h.id !== hitId));
 
-  useEffect(() => {
-    setNetworkBullets(bullets);
-  }, [bullets]);
-
-  useEffect(() => {
-    setNetworkHits(hits);
-  }, [hits]);
+  useEffect(() => { setNetworkBullets(bullets); }, [bullets]);
+  useEffect(() => { setNetworkHits(hits); }, [hits]);
 
   const onKilled = (_victim, killer) => {
     const killerState = players.find((p) => p.state.id === killer)?.state;
@@ -85,14 +77,10 @@ export const Experience = ({ downgradedPerformance = false }) => {
     }
   };
 
-  // Handle zone damage to players
   const onZoneDamage = (playerState, damage) => {
     if (!isHost()) return;
     if (playerState.state.dead) return;
-    
-    const currentHealth = playerState.state.health;
-    const newHealth = Math.max(0, currentHealth - damage);
-    
+    const newHealth = Math.max(0, playerState.state.health - damage);
     if (newHealth <= 0) {
       playerState.setState("deaths", playerState.state.deaths + 1);
       playerState.setState("dead", true);
@@ -105,8 +93,10 @@ export const Experience = ({ downgradedPerformance = false }) => {
   return (
     <>
       <Map />
-      {gameStarted && <SafeZone players={players} onPlayerDamage={onZoneDamage} />}
-      {players.map(({ state, joystick }, index) => (
+      {gameStarted && (
+        <SafeZone players={players} onPlayerDamage={onZoneDamage} />
+      )}
+      {players.map(({ state, joystick, playerIndex }) => (
         <CharacterController
           key={state.id}
           state={state}
@@ -115,6 +105,7 @@ export const Experience = ({ downgradedPerformance = false }) => {
           onKilled={onKilled}
           onFire={onFire}
           downgradedPerformance={downgradedPerformance}
+          playerIndex={playerIndex}
         />
       ))}
       {(isHost() ? bullets : networkBullets).map((bullet) => (

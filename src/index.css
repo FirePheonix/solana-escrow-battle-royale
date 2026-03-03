@@ -10,3 +10,11 @@
 body {
   margin: 0;
 }
+
+/* Ensure the Solana wallet adapter modal always sits above all game overlays */
+.wallet-adapter-modal-wrapper {
+  z-index: 100000 !important;
+}
+.wallet-adapter-modal {
+  z-index: 100000 !important;
+}

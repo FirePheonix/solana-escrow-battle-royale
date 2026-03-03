@@ -1,0 +1,19 @@
+[package]
+name = "game-stake"
+version = "0.1.0"
+description = "Solana escrow for 2v2 shooter staking"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "game_stake"
+
+[features]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+cpi = ["no-entrypoint"]
+default = []
+
+[dependencies]
+anchor-lang = "0.29.0"
