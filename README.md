@@ -1,3 +1,5 @@
+<img width="909" height="397" alt="image" src="https://github.com/user-attachments/assets/020227cf-3fab-4e78-82e2-03725bd25302" />
+
 # Solana Escrow Battle Royale
 
 A browser-based multiplayer 3D shooter where players wager real SOL. The smart contract holds everyone's entry fee in escrow — last player standing wins the pot.
